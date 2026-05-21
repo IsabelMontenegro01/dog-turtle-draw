@@ -16,8 +16,11 @@
 
 ### Resultado Final
 
-![Turtle desenhando contornos](img/turtle_result.png)
-*Adicionar screenshot do turtle desenhando o resultado*
+<div align="center">
+<sub>Resultado Final do Dog Contornado</sub>
+<img src="/docs/img/turtle_dog.png" width="100%">
+</div>
+
 
 ---
 
