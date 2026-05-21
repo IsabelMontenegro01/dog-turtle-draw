@@ -247,7 +247,7 @@ def process_image(path: str,
                   visualize: bool = False):
     rgb     = load_image(path)
     gray    = rgb_to_gray(rgb)
-    blurred = gaussian_blur(gray, size=9, sigma=2.5)  # blur moderado
+    blurred = gaussian_blur(gray, size=15, sigma=3.5)  # era size=9, sigma=2.5
     edges   = detect_edges(blurred, low_ratio, high_ratio)
     contours = extract_contours(edges, min_contour_len)
     contours_sim = map_to_turtlesim(contours, rgb.shape)
