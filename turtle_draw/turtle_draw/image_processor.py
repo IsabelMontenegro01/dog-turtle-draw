@@ -119,7 +119,7 @@ def _hysteresis(suppressed: np.ndarray, low: float, high: float) -> np.ndarray:
 
 def detect_edges(gray: np.ndarray,
                  low_ratio: float = 0.05,
-                 high_ratio: float = 0.15) -> np.ndarray:
+                 high_ratio: float = 0.30) -> np.ndarray:
     """
     CORRIGIDO: recebe imagem já suavizada, NÃO aplica gaussian_blur novamente.
     O double-blur anterior distorcia os gradientes e detectava bordas fantasmas.

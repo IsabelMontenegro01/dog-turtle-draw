@@ -27,12 +27,12 @@ def generate_launch_description():
         DeclareLaunchArgument('image_path',      default_value='image.png',
                               description='Caminho para a imagem de entrada'),
         DeclareLaunchArgument('low_ratio',       default_value='0.05'),
-        DeclareLaunchArgument('high_ratio',      default_value='0.15'),
-        DeclareLaunchArgument('min_contour_len', default_value='20'),
+        DeclareLaunchArgument('high_ratio',      default_value='0.30'),
+        DeclareLaunchArgument('min_contour_len', default_value='80'),
         DeclareLaunchArgument('pen_r',           default_value='255'),
         DeclareLaunchArgument('pen_g',           default_value='255'),
         DeclareLaunchArgument('pen_b',           default_value='255'),
-        DeclareLaunchArgument('pen_width',       default_value='1'),
+        DeclareLaunchArgument('pen_width',       default_value='2'),
     ]
 
     # ── nó do simulador ─────────────────────────────────────────────────────
