@@ -242,8 +242,8 @@ def map_to_turtlesim(contours: list,
 
 def process_image(path: str,
                   low_ratio: float = 0.05,
-                  high_ratio: float = 0.15,
-                  min_contour_len: int = 20,
+                  high_ratio: float = 0.3,
+                  min_contour_len: int = 80,
                   visualize: bool = False):
     rgb     = load_image(path)
     gray    = rgb_to_gray(rgb)
