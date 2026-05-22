@@ -93,4 +93,4 @@ Para mais detalhes sobre a lógica de código, conceitos de visão computacional
 
 ### 🎥 Vídeo Explicativo
 
-[📺 Assista ao vídeo do projeto](https://drive.google.com/file/d/1NmKys2CQqgJBlXY7tZdgKplQwxkvuo-Q/view?usp=sharing)
+[📺 Assista ao vídeo do projeto](https://drive.google.com/file/d/1PdwdPyE50r1I8M1HIDfNiWplReT7OuAn/view?usp=sharing)
