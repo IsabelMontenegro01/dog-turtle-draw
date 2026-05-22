@@ -1,47 +1,57 @@
-# turtle_draw 
+# turtle_draw
 
-Pacote ROS 2 que extrai contornos de uma imagem com uma pipeline de visão computacional implementada do zero e os desenha no **turtlesim**.
+Pacote ROS 2 que extrai contornos de imagens utilizando uma pipeline de visão computacional implementada com NumPy e os desenha no **turtlesim**.
 
-## Estrutura
+---
+
+## Funcionalidades
+
+- Extração de bordas e contornos
+- Pipeline de visão computacional implementada manualmente
+- Desenho automático no turtlesim
+- Parametrização de thresholds e filtros
+- Integração com ROS 2
+
+---
+
+## Estrutura do Projeto
 
 ```text
 turtle_draw/
 ├── turtle_draw/
 │   ├── __init__.py
-│   ├── image_processor.py   # pipeline de visão computacional
-│   └── turtle_draw_node.py  # nó ROS 2
+│   ├── image_processor.py
+│   └── turtle_draw_node.py
 ├── launch/
-│   └── turtle_draw.launch.py
-├── resource/turtle_draw
+├── docs/
+├── resource/
 ├── package.xml
 ├── setup.py
 └── setup.cfg
 ```
 
+---
+
 ## Dependências
 
-- **ROS 2** (Humble ou superior)
-- **Python 3.10+**
+- ROS 2 Humble ou superior
+- Python 3.10+
 
-### Dependências Python
+### Bibliotecas Python
 
 ```bash
 pip install numpy opencv-python matplotlib
 ```
 
-> **Nota**: O OpenCV é usado **apenas** para leitura da imagem (`cv2.imread`).  
-> Todo o processamento de visão computacional é implementado com NumPy puro.
+> O OpenCV é utilizado apenas para leitura da imagem (`cv2.imread`).
 
 ---
 
 ## Build
 
+Dentro do workspace ROS 2:
+
 ```bash
-# Dentro do seu workspace ROS 2 (ex: ~/ros2_ws)
-cd ~/ros2_ws/src
-
-# clone ou copie o pacote para esta pasta
-
 cd ~/ros2_ws
 
 colcon build --packages-select turtle_draw
@@ -52,16 +62,6 @@ source install/setup.bash
 ---
 
 ## Execução
-
-Atualmente o projeto utiliza execução direta do node Python via:
-
-```bash
-./install/turtle_draw/bin/turtle_draw_node
-```
-
-e não via `ros2 launch`.
-
----
 
 ### Terminal 1
 
@@ -75,20 +75,16 @@ ros2 run turtlesim turtlesim_node
 
 ### Terminal 2
 
-Compile o pacote:
+Compile e execute o projeto:
 
 ```bash
 colcon build --packages-select turtle_draw
 
 source install/setup.bash
-```
 
-Execute o node:
-
-```bash
 ./install/turtle_draw/bin/turtle_draw_node \
   --ros-args \
-  -p image_path:=/caminho/para/sua_imagem.png \
+  -p image_path:=/caminho/para/imagem.png \
   -p min_contour_len:=80 \
   -p low_ratio:=0.05 \
   -p high_ratio:=0.30
@@ -96,32 +92,27 @@ Execute o node:
 
 ---
 
-## Parâmetros disponíveis
+## Parâmetros
 
 | Parâmetro | Padrão | Descrição |
 |---|---|---|
-| `image_path` | `image.png` | Caminho para a imagem de entrada |
-| `low_ratio` | `0.05` | Fração do limiar baixo (histerese de Canny) |
-| `high_ratio` | `0.30` | Fração do limiar alto (histerese de Canny) |
-| `min_contour_len` | `80` | Tamanho mínimo de contorno em pixels (filtra ruído) |
+| `image_path` | `image.png` | Caminho da imagem de entrada |
+| `low_ratio` | `0.05` | Threshold inferior da histerese |
+| `high_ratio` | `0.30` | Threshold superior da histerese |
+| `min_contour_len` | `80` | Tamanho mínimo de contorno |
 | `pen_r/g/b` | `255/255/255` | Cor RGB da caneta |
-| `pen_width` | `2` | Espessura da caneta em pixels |
-
-> **Observação:** Os exemplos do projeto utilizam `dog.png` apenas como imagem de demonstração.  
-> O valor padrão interno do parâmetro `image_path` é `image.png`.  
-> Recomenda-se informar explicitamente o parâmetro `image_path` durante a execução.
+| `pen_width` | `2` | Espessura da caneta |
 
 ---
 
-## Ajuste rápido de problemas
+## Observações
 
-- **Muito ruído / falsos contornos**:  
-  aumente `high_ratio` (ex: `0.35`)
+- Os exemplos do projeto utilizam `dog.png` apenas como imagem de demonstração.
+- Recomenda-se informar explicitamente o parâmetro `image_path` durante a execução.
 
-- **Poucos contornos**:  
-  reduza `high_ratio` (ex: `0.20`) e aumente `low_ratio` (ex: `0.08`)
+---
 
-- **Teste rápido sem ROS**:
+## Teste Rápido sem ROS
 
 ```python
 from turtle_draw.image_processor import process_image
@@ -132,21 +123,15 @@ contours, edges = process_image(
 )
 ```
 
-Para troubleshooting avançado, consulte a [documentação técnica](docs/documentacao.md#troubleshooting-avançado).
-
 ---
 
 ## Documentação
 
-Para mais detalhes sobre:
-- lógica do código
-- conceitos de visão computacional
-- arquitetura da pipeline
-
-consulte a [documentação completa](docs/documentacao.md).
+- Relatório técnico resumido: [`docs/relatorio_tecnico.md`](docs/relatorio.md)
+- Documentação completa da pipeline: [`docs/documentacao_completa.md`](docs/documentacao_completa.md)
 
 ---
 
-## 🎥 Vídeo Explicativo
+## Vídeo Explicativo
 
 [📺 Assista ao vídeo do projeto](https://drive.google.com/file/d/1PdwdPyE50r1I8M1HIDfNiWplReT7OuAn/view?usp=sharing)
