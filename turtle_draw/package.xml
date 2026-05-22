@@ -3,7 +3,7 @@
   <name>turtle_draw</name>
   <version>0.0.1</version>
   <description>Draw dog contour with turtlesim</description>
-  <maintainer email="you@email.com">you</maintainer>
+  <maintainer email="isabelmontenegrogv@hotmail.com">Isabel Montenegro</maintainer>
   <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
