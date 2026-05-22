@@ -7,6 +7,8 @@
 3. [Arquitetura da Pipeline](#3-arquitetura-da-pipeline)
 4. [Detalhes de Implementação](#4-detalhes-de-implementação)
 5. [Troubleshooting Avançado](#5-troubleshooting-avançado)
+6. [Decisões de Implementação](#6-decisões-de-implementação-por-etapa)
+7. [Dificuldades Encontradas](#7-dificuldades-encontradas)
 
 ---
 
@@ -308,6 +310,156 @@ blurred = gaussian_blur(gray, size=17, sigma=4.0)  # Aumentar
 
 ---
 
-## 🎥 Vídeo Explicativo
+## 6. Decisões de Implementação por Etapa
+
+### 6.1. Por que Sobel + Histerese (e não Canny direto)?
+
+**Decisão**: Implementar manualmente Sobel + Non-Maximum Suppression + Histerese em vez de usar `cv2.Canny`.
+
+**Justificativa**:
+- **Aprendizado**: Entender cada etapa do pipeline de detecção de bordas
+- **Personalização**: Adicionar filtros customizados (compactness, Moore-Neighbor) depois
+- **Transparência**: Cada parâmetro (`high_ratio`, `low_ratio`, `sigma`) é explícito e ajustável
+- **Sem "caixa preta"**: Visão computacional é aprendizado, não só resultados
+
+Canny seria mais rápido (~1000x), mas esconderia a lógica.
+
+### 6.2. Por que Moore-Neighbor para Traçado de Contornos?
+
+**Decisão**: Implementar traçado manual do contorno em vez de usar `cv2.findContours`.
+
+**Justificativa**:
+- **Controle fino**: Adicionar filtros por `min_length` e `max_bbox_ratio`
+- **Ordem garantida**: Cada contorno é uma sequência conectada (x, y) em ordem
+- **Ruído filtrado**: Remover ruído de textura de fundo via `_contour_compactness()`
+- **Algoritmo clássico**: Moore-Neighbor é fundacional em visão computacional
+
+Trade-off: Muito mais lento que OpenCV, mas educacional e customizável.
+
+### 6.3. Por que Kernel Gaussiano 15×15 e σ=3.5?
+
+**Decisão**: Testar experimentalmente valores de size e sigma.
+
+**Justificativa**:
+- **5×5**: Deixa muitos artefatos e ruído fino
+- **9×9**: Parcialmente melhor, mas bordas ficam ainda finas/quebradas
+- **15×15**: Suaviza bem sem perder bordas importantes do cachorro
+- **σ=3.5**: Controla a "força" do desfoque — 3.5 foi escolhido após testes visuais
+
+**Resultado**: Blur suave o suficiente para remover ruído, mas mantendo contornos principais intactos.
+
+### 6.4. Por que Non-Maximum Suppression?
+
+**Decisão**: Incluir NMS para afinar bordas de ~5 pixels para ~1 pixel.
+
+**Justificativa**:
+- Sobel puro produz bordas **grossas** (vários pixels paralelos)
+- NMS compara cada pixel com vizinhos na direção do gradiente
+- Mantém só o máximo local → bordas de 1 pixel de espessura
+- Essencial para traçado de contorno preciso via Moore-Neighbor
+
+Sem NMS, Moore-Neighbor teria dificuldade em acompanhar bordas finas.
+
+### 6.5. Por que Histerese com low_ratio e high_ratio?
+
+**Decisão**: Usar dois limiares adaptativos em vez de limiar fixo.
+
+**Justificativa**:
+- **Problema com limiar fixo**: Perde bordas fracas ou captura ruído
+- **Histerese (Canny-style)**:
+  - Bordas fortes: `magnitude ≥ high_ratio * max(magnitude)`
+  - Bordas fracas: `magnitude ≥ low_ratio * max(magnitude)` E conectadas a fortes
+- **Resultado**: Bordas fracas só permanecem se tocam bordas fortes (menos falsos positivos)
+- **Flexibilidade**: `low_ratio=0.05` e `high_ratio=0.30` podem ser ajustados por imagem
+
+---
+
+## 7. Dificuldades Encontradas
+
+### 7.1. Double-Blur (Removido - Correção Crítica)
+
+**Problema**: Versão anterior aplicava `gaussian_blur()` **duas vezes**:
+1. Uma em `process_image()` antes de chamar `detect_edges()`
+2. Outra dentro de `detect_edges()` (duplicado)
+
+**Sintoma**: Bordas muito suavizadas, muitos detalhes perdidos, detecção de "bordas fantasmas".
+
+**Investigação**: 
+- Rodar `visualize=True` revelou bordas extremamente finas/falsas em padrões de ruído
+- Dobro blur → distorção severa de gradientes → Sobel detecta artefatos
+
+**Solução**: Remover blur duplicado de dentro de `detect_edges()`. Agora:
+```python
+# Em process_image()
+blurred = gaussian_blur(gray, size=15, sigma=3.5)
+edges = detect_edges(blurred, ...)  # ← recebe já suavizado
+
+# Em detect_edges()
+# ← REMOVIDO: blurred = gaussian_blur(gray) que causava double-blur
+```
+
+**Impacto**: Bordas agora são mais claras e estáveis. Contornos detectados com precisão.
+
+### 7.2. Filtro de Compactness Insuficiente Inicialmente
+
+**Problema**: Ao extrair contornos, muita "sujeira" de textura de fundo era incluída.
+
+**Investigação**:
+- Primeiro filtro: só `min_length=20` (removia pontos isolados)
+- Mas contornos espalhados pelo fundo passavam
+
+**Solução**: Adicionar `_contour_compactness()`:
+```python
+ratio = bbox_area / (H * W)
+if ratio > max_bbox_ratio:  # max_bbox_ratio=0.85
+    continue  # Descartar contorno "espalhado"
+```
+
+Contornos localizados (cachorro) têm ratio ~0.15–0.40. Ruído espalhado tem ratio ~0.80–1.0.
+
+**Impacto**: Redução drástica de artefatos. Só contornos "reais" (objeto compacto) são extraídos.
+
+### 7.3. Convolução Manual — Performance vs Aprendizado
+
+**Problema**: Implementação manual com loops `for i, for j` é lenta (~0.5s por imagem 400×300).
+
+**Alternativa considerada**: Usar `scipy.signal.convolve2d` (~10ms).
+
+**Decisão**: Manter convolução manual porque:
+- Projeto é educacional (entender o algoritmo)
+- Velocidade aceitável para imagens pequenas
+- Sem dependências extras além de NumPy
+
+**Mitigação**: Imagens maiores (~2000×2000) podem precisar otimização com NumPy vectorization.
+
+### 7.4. Mapeamento de Coordenadas Invertidas (Y-axis)
+
+**Problema**: Primeira versão invertia Y nas coordenadas turtlesim — imagem saía de cabeça para baixo.
+
+**Causa**: Esqueci que:
+- Imagem: origem (0,0) no canto superior esquerdo, Y aumenta para baixo
+- Turtlesim: origem (0,0) no inferior esquerdo, Y aumenta para cima
+
+**Solução**:
+```python
+ty = (H - py) * scale + margin + ...  # ← Inverter Y
+```
+
+**Verificação**: Desenho agora aparece na orientação correta.
+
+### 7.5. Parametrização Inconsistente Entre Arquivos
+
+**Problema**: Como descoberto no feedback — valores diferentes em `turtle_draw_node.py`, `launch.py`, `image_processor.py`, e `README`.
+
+**Causa**: Sem sincronização durante desenvolvimento. Cada arquivo tinha "valores que funcionavam" localmente.
+
+**Solução**: Decidir por um conjunto de referência (README, testado) e propagar:
+- `high_ratio = 0.30` (vs 0.15 anterior)
+- `min_contour_len = 80` (vs 20 anterior)
+- `pen_width = 2` (vs 1 anterior)
+
+**Impacto**: Comportamento consistente independente de como rodar (launch, CLI, direto do Python).
+
+---
 
 [📺 Assista ao vídeo completo do projeto](LINK_DO_VIDEO_AQUI)
